@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Netherlands Box 3 Tax Calculator</title>
+        <!-- Load Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            /* Use Inter font - default for Tailwind */
+            :root {
+                font-family: 'Inter', sans-serif;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 min-h-screen p-4 sm:p-8">
+
+        <div class="max-w-4xl mx-auto bg-white shadow-2xl rounded-xl p-6 sm:p-10 border border-indigo-100">
+
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-indigo-800 mb-2">Box 3 Savings Tax Calculator (2024)</h1>
+            <p class="text-gray-600 mb-8">Calculate the Dutch Box 3 income tax for savings, based on the specific 2024 rules (1.44% fictitious return rate, €57,000 allowance, 36% tax rate).</p>
+
+            <!-- Input and Control Area -->
+            <div class="mb-8 p-6 bg-indigo-50 rounded-lg shadow-inner">
+                <label for="savingsInput" class="block text-lg font-semibold text-indigo-700 mb-2">
+                    Total Bank Savings (€)
+                </label>
+                <input type="number" id="savingsInput" value="150000" min="0"
+                    class="w-full px-4 py-3 border-2 border-indigo-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-gray-800 text-xl transition duration-150 ease-in-out"
+                    placeholder="e.g., 150000" oninput="calculateTax()">
+                <p class="text-sm text-indigo-600 mt-2">Deductible debts are assumed to be €0 as per the initial rules.</p>
+            </div>
+
+            <!-- Final Result Display -->
+            <div id="finalResult" class="mb-10 p-6 bg-indigo-700 text-white rounded-xl shadow-lg transform transition duration-500 hover:scale-[1.01] flex flex-col sm:flex-row justify-between items-center">
+                <div class="text-center sm:text-left mb-4 sm:mb-0">
+                    <p class="text-sm opacity-80 font-medium">Estimated Tax Payable (Box 3)</p>
+                    <p class="text-5xl font-extrabold" id="taxDueOutput">€0</p>
+                </div>
+                <div class="text-center sm:text-right">
+                    <p class="text-xl font-medium" id="incomeFromSavingsOutput">€0</p>
+                    <p class="text-sm opacity-80">Income from Savings & Investments (Step 5)</p>
+                </div>
+            </div>
+
+            <!-- Calculation Breakdown -->
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Calculation Breakdown</h2>
+
+            <div id="breakdownContainer" class="space-y-4">
+                <!-- Step results will be inserted here -->
+            </div>
+        </div>
+
+        <script>
+            // --- CONSTANTS ---
+            const BANK_RETURN_RATE = 0.0144; // 1.44%
+            const TAX_FREE_ALLOWANCE = 57000; // €57,000 in 2024
+            const BOX3_TAX_RATE = 0.36; // 36%
+            const DEDUCTIBLE_DEBTS = 0; // Fixed at €0 as per the prompt
+
+            // Utility function to format numbers as Euro currency (2 decimals)
+            const formatEuro = (amount) => new Intl.NumberFormat('en-DE', {
+                style: 'currency',
+                currency: 'EUR',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(amount);
+
+            // Utility function to format numbers as whole Euro currency (no decimals)
+            const formatWholeEuro = (amount) => new Intl.NumberFormat('en-DE', {
+                style: 'currency',
+                currency: 'EUR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            }).format(amount);
+
+            // Utility function to format percentage (3 decimal points for fixed rates)
+            const formatPercent = (value) => (value).toFixed(3) + '%';
+
+
+            // Function to create an HTML element for a calculation step
+            const createStepElement = (step, title, calculation, result) => {
+                return `
+                    <div class="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                        <h3 class="font-bold text-lg text-gray-700">Step ${step}: ${title}</h3>
+                        <p class="text-sm text-gray-500 mb-1">${calculation}</p>
+                        <p class="text-xl font-mono text-indigo-600">${result}</p>
+                    </div>
+                `;
+            };
+
+            const calculateTax = () => {
+                const savingsInput = document.getElementById('savingsInput');
+                const savings = parseFloat(savingsInput.value);
+
+                // Clear previous results and handle invalid input
+                const taxDueOutput = document.getElementById('taxDueOutput');
+                const incomeFromSavingsOutput = document.getElementById('incomeFromSavingsOutput');
+                const breakdownContainer = document.getElementById('breakdownContainer');
+                breakdownContainer.innerHTML = '';
+                taxDueOutput.textContent = formatWholeEuro(0);
+                incomeFromSavingsOutput.textContent = formatWholeEuro(0);
+
+
+                if (isNaN(savings) || savings <= 0) {
+                    // If input is invalid or zero, we stop here.
+                    return;
+                }
+
+                let stepsHtml = '';
+
+                // --- Step 1: Calculate the taxable return ---
+                let taxableReturn = savings * BANK_RETURN_RATE;
+                // Rounded to the nearest whole number (without decimal)
+                taxableReturn = Math.round(taxableReturn);
+
+                stepsHtml += createStepElement(
+                    1,
+                    'Taxable Return (Rounded to Nearest Whole Euro)',
+                    `${formatEuro(savings)} × ${formatPercent(BANK_RETURN_RATE * 100)} = ${formatWholeEuro(taxableReturn)}`,
+                    formatWholeEuro(taxableReturn)
+                );
+
+                // --- Step 2: Calculate your capital return tax base ---
+                let capitalReturnTaxBase = savings - DEDUCTIBLE_DEBTS;
+                // Rounded to 2 decimal places
+                capitalReturnTaxBase = parseFloat(capitalReturnTaxBase.toFixed(2));
+
+                stepsHtml += createStepElement(
+                    2,
+                    'Capital Return Tax Base',
+                    `${formatEuro(savings)} (Assets) - ${formatEuro(DEDUCTIBLE_DEBTS)} (Debts) = ${formatEuro(capitalReturnTaxBase)}`,
+                    formatEuro(capitalReturnTaxBase)
+                );
+
+                // --- Step 3: Calculate the basis for savings and investments ---
+                let basisForSavingsAndInvestments = capitalReturnTaxBase - TAX_FREE_ALLOWANCE;
+                const basisCalculation = `${formatEuro(capitalReturnTaxBase)} - ${formatEuro(TAX_FREE_ALLOWANCE)} (Tax-Free Allowance) = ${formatEuro(basisForSavingsAndInvestments)}`;
+
+                if (basisForSavingsAndInvestments < 0) {
+                    basisForSavingsAndInvestments = 0;
+                }
+
+                stepsHtml += createStepElement(
+                    3,
+                    'Basis for Savings and Investments',
+                    basisCalculation,
+                    formatEuro(basisForSavingsAndInvestments)
+                );
+
+                // --- Step 4: Calculate your share in the capital return tax base ---
+                let sharePercentage = 0;
+                if (capitalReturnTaxBase > 0) {
+                    sharePercentage = (basisForSavingsAndInvestments / capitalReturnTaxBase) * 100;
+                    // Rounded to 2 decimal points
+                    sharePercentage = parseFloat(sharePercentage.toFixed(2));
+                }
+                // Use .toFixed(2) for display
+                const sharePercentageFormatted = sharePercentage.toFixed(2) + '%';
+
+                stepsHtml += createStepElement(
+                    4,
+                    'Share in the Capital Return Tax Base (Rounded to 2 Decimals)',
+                    `${formatEuro(basisForSavingsAndInvestments)} ÷ ${formatEuro(capitalReturnTaxBase)} × 100 = ${sharePercentageFormatted}`,
+                    sharePercentageFormatted
+                );
+
+                // --- Step 5: Calculate your income from savings and investments ---
+                // Use the strictly rounded percentage value from Step 4 for calculation
+                let incomeFromSavings = taxableReturn * (sharePercentage / 100);
+                // UPDATED: Round to the nearest whole Euro
+                incomeFromSavings = Math.round(incomeFromSavings);
+
+                // Display factor (the percentage divided by 100) with 4 decimals to show the 2 percentage decimals accurately
+                const sharePercentForCalculation = (sharePercentage / 100).toFixed(4);
+
+                stepsHtml += createStepElement(
+                    5,
+                    'Income from Savings and Investments (Rounded to Nearest Whole Euro)',
+                    `${formatWholeEuro(taxableReturn)} (Taxable Return) × ${sharePercentForCalculation} = ${formatWholeEuro(incomeFromSavings)}`,
+                    formatWholeEuro(incomeFromSavings)
+                );
+
+                // --- Step 6: Calculate how much tax you must pay in Box 3 ---
+                let taxToPay = incomeFromSavings * BOX3_TAX_RATE;
+                // UPDATED: Round to the nearest whole Euro
+                taxToPay = Math.round(taxToPay);
+
+                stepsHtml += createStepElement(
+                    6,
+                    'Box 3 Tax Payable (36%, Rounded to Nearest Whole Euro)',
+                    `${formatPercent(BOX3_TAX_RATE * 100)} × ${formatWholeEuro(incomeFromSavings)} = ${formatWholeEuro(taxToPay)}`,
+                    formatWholeEuro(taxToPay)
+                );
+
+
+                // --- Final Output Updates ---
+                taxDueOutput.textContent = formatWholeEuro(taxToPay);
+                incomeFromSavingsOutput.textContent = formatWholeEuro(incomeFromSavings);
+                breakdownContainer.innerHTML = stepsHtml;
+            };
+
+            // Run calculation on load and whenever input changes
+            document.addEventListener('DOMContentLoaded', calculateTax);
+            document.getElementById('savingsInput').addEventListener('input', calculateTax);
+        </script>
+    </body>
+</html>
